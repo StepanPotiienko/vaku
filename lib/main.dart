@@ -1,7 +1,51 @@
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:bitsdojo_window/bitsdojo_window.dart';
 
 void main() {
   runApp(const MyApp());
+
+  doWhenWindowReady(() {
+    const initialSize = Size(500, 700);
+    appWindow.minSize = initialSize;
+    appWindow.size = initialSize;
+    appWindow.alignment = Alignment.center;
+    appWindow.show();
+  });
+}
+
+class CirclesGradient extends AnimatedWidget {
+  const CirclesGradient({super.key, required Animation<double> animation})
+    : super(listenable: animation);
+
+  static final List<Color> circlesColors = [
+    Colors.blue.shade200,
+    Colors.blue.shade300,
+    Colors.blue.shade400,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final animation = listenable as Animation<double>;
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        CircleAvatar(
+          radius: animation.value + 40,
+          backgroundColor: circlesColors[0],
+        ),
+        CircleAvatar(
+          radius: animation.value + 20,
+          backgroundColor: circlesColors[1],
+        ),
+        CircleAvatar(
+          radius: animation.value + 5,
+          backgroundColor: circlesColors[2],
+        ),
+      ],
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -10,6 +54,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
       ),
@@ -18,41 +63,101 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatelessWidget {
+class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
-  static const List<String> welcomingMessages = [];
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CirclesGradient(),
-            Padding(padding: EdgeInsetsGeometry.all(5)),
-            const Text(
-              "Welcome to VaKu.",
-              style: TextStyle(fontSize: 18, fontFamily: "Verdana"),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class CirclesGradient extends StatelessWidget {
-  const CirclesGradient({super.key});
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin<MyHomePage> {
+  late AnimationController controller;
+  late Animation<double> animation;
+
+  final player = AudioPlayer();
+
+  static const List<String> welcomingMessagesList = [
+    "Welcome to VaKu.",
+    "The circles above indicate your breathing pattern.",
+    "Let’s take a deep breath together.",
+    "Breathe in… Breathe out…",
+  ];
+
+  int messageIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    );
+
+    // Викликати асинхронну функцію без await
+    _playMusic();
+
+    final curvedAnimation = CurvedAnimation(
+      parent: controller,
+      curve: Curves.easeInOut,
+    );
+
+    animation = Tween<double>(begin: 5, end: 20).animate(curvedAnimation);
+
+    controller.addStatusListener((status) async {
+      if (status == AnimationStatus.completed) {
+        setState(() {
+          messageIndex = (messageIndex + 1) % welcomingMessagesList.length;
+        });
+        await Future.delayed(const Duration(seconds: 1));
+        controller.reverse();
+      } else if (status == AnimationStatus.dismissed) {
+        controller.forward();
+      }
+    });
+
+    controller.forward();
+  }
+
+  Future<void> _playMusic() async {
+    await player.play(AssetSource('music/ambient.mp3'));
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Stack(
-      alignment: Alignment.center,
+      fit: StackFit.expand,
       children: [
-        CircleAvatar(radius: 100, backgroundColor: Colors.purple.shade200),
-        CircleAvatar(radius: 75, backgroundColor: Colors.purple.shade300),
-        CircleAvatar(radius: 50, backgroundColor: Colors.purple.shade400),
+        Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 300,
+                  height: 300,
+                  child: CirclesGradient(animation: animation),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  welcomingMessagesList[messageIndex],
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontFamily: "Verdana",
+                    color: Colors.black,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
