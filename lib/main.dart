@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
@@ -94,8 +96,9 @@ class _MyHomePageState extends State<MyHomePage>
       duration: const Duration(seconds: 4),
     );
 
-    // Викликати асинхронну функцію без await
-    _playMusic();
+    const List<String> songsList = ['music/ambient.mp3', 'music/wet_hands.mp3'];
+    int songId = Random().nextInt(songsList.length);
+    _playMusic(songsList[songId]);
 
     final curvedAnimation = CurvedAnimation(
       parent: controller,
@@ -119,8 +122,8 @@ class _MyHomePageState extends State<MyHomePage>
     controller.forward();
   }
 
-  Future<void> _playMusic() async {
-    await player.play(AssetSource('music/ambient.mp3'));
+  Future<void> _playMusic(String songUrl) async {
+    await player.play(AssetSource(songUrl));
   }
 
   @override
