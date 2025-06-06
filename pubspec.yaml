@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   bitsdojo_window: ^0.1.6
   audioplayers: ^6.4.0
+  fancy_bottom_navigation_plus: ^1.0.3
 
 dev_dependencies:
   flutter_test:
